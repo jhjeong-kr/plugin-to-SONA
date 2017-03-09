@@ -2,7 +2,6 @@ package v1
 
 import (
 	"errors"
-	"fmt"
 	"os/user"
 	"time"
 
@@ -17,6 +16,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+// Run registers CRUD watchers for Pod on kubernetes client
 func Run() int {
 	clientset, err := initKubeClient()
 	if err != nil {
@@ -24,28 +24,12 @@ func Run() int {
 		return config.EXITKUBEINIT
 	}
 
-	fmt.Println("Ok, let's enumerate")
-
-	watchlist := cache.NewListWatchFromClient(clientset.Core().RESTClient(), "pods", v1.NamespaceDefault,
-		fields.Everything())
-	_, controller := cache.NewInformer(
-		watchlist,
-		&v1.Pod{},
-		time.Second*0,
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				fmt.Printf("add: %s \n", obj)
-			},
-			DeleteFunc: func(obj interface{}) {
-				fmt.Printf("delete: %s \n", obj)
-			},
-			UpdateFunc: func(oldObj, newObj interface{}) {
-				fmt.Printf("old: %s, new: %s \n", oldObj, newObj)
-			},
-		},
-	)
 	stop := make(chan struct{})
-	controller.Run(stop)
+
+	registerPODWatcher(clientset, stop)
+
+	<-stop
+
 	return config.EXITNORMAL
 }
 
@@ -68,4 +52,31 @@ func initKubeClient() (*kubernetes.Clientset, error) {
 		}
 	}
 	return kubernetes.NewForConfig(kubeConfig)
+}
+
+func podAddFunc(obj interface{}) {
+	log.Info("Pod is added")
+}
+
+func podDeleteFunc(obj interface{}) {
+	log.Info("Pod is added")
+}
+
+func podUpdateFunc(oldObj, newObj interface{}) {
+	log.Info("Pod is added")
+}
+
+func registerPODWatcher(clientset *kubernetes.Clientset, stop chan struct{}) {
+	watchlist := cache.NewListWatchFromClient(clientset.Core().RESTClient(), "pods", v1.NamespaceDefault, fields.Everything())
+	_, controller := cache.NewInformer(
+		watchlist,
+		&v1.Pod{},
+		time.Second*0,
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    podAddFunc,
+			DeleteFunc: podDeleteFunc,
+			UpdateFunc: podUpdateFunc,
+		},
+	)
+	go controller.Run(stop)
 }
