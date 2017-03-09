@@ -1,12 +1,13 @@
 package main
 
 import (
-	"os"
-	"plugin-to-SONA"
-	"plugin-to-SONA/config"
+	config "plugin-to-SONA/config"
+	log "plugin-to-SONA/log"
+	plugin "plugin-to-SONA/v1"
 )
 
 func main() {
+	log.Info("Starting plugin for SONA")
 	config.ParseCommandLine()
-	os.Exit(plugin.Run())
+	log.Info("Terminating with code: ", plugin.Run())
 }

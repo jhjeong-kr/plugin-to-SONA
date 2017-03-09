@@ -6,8 +6,10 @@ import (
 	"runtime"
 	"strings"
 
-	config "cperfc/config"
+	config "plugin-to-SONA/config"
+
 	log "github.com/Sirupsen/logrus"
+	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 )
 
 func init() {
@@ -17,7 +19,7 @@ func Logging() {
 	if config.LogFormat == "json" {
 		log.SetFormatter(&log.JSONFormatter{})
 	} else {
-		myTextFormatter := new(TextFormatter)
+		myTextFormatter := new(prefixed.TextFormatter)
 		myTextFormatter.TimestampFormat = "01-02 15:04:05.000"
 		myTextFormatter.ShortTimestamp = false
 		log.SetFormatter(myTextFormatter)
@@ -26,7 +28,7 @@ func Logging() {
 	if err != nil {
 		level = log.InfoLevel
 	}
-    log.SetOutput(os.Stderr)
+	log.SetOutput(os.Stderr)
 	log.SetLevel(level)
 }
 
@@ -106,7 +108,7 @@ func findCaller() string {
 		file := parts[len(parts)-1]
 		if (dir != "log") || (file != "log.go") {
 			parts = strings.Split(runtime.FuncForPC(pc).Name(), ".")
-			return fmt.Sprintf("%s(%s:%d)", file, parts[len(parts) - 1], int(line))
+			return fmt.Sprintf("%s(%s:%d)", file, parts[len(parts)-1], int(line))
 		}
 	}
 	return "Unknown"

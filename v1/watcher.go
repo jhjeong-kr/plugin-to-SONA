@@ -1,28 +1,27 @@
-package main
+package v1
 
 import (
-	"flag"
+	"errors"
 	"fmt"
+	"os/user"
 	"time"
+
+	config "plugin-to-SONA/config"
+	log "plugin-to-SONA/log"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/fields"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func main() {
-	kubeconfig := flag.String("kubeconfig", "/etc/kubernetes/admin.conf", "absolute path")
-	flag.Parse()
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+func Run() int {
+	clientset, err := initKubeClient()
 	if err != nil {
-		panic(err.Error())
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
+		log.Error(err.Error())
+		return config.EXITKUBEINIT
 	}
 
 	fmt.Println("Ok, let's enumerate")
@@ -47,4 +46,26 @@ func main() {
 	)
 	stop := make(chan struct{})
 	controller.Run(stop)
+	return config.EXITNORMAL
+}
+
+func initKubeClient() (*kubernetes.Clientset, error) {
+	var kubeConfig *rest.Config
+	var err error
+
+	if len(config.KubeConfig) > 0 {
+		if u, _ := user.Current(); u.Gid != "0" {
+			return nil, errors.New("please run with root permission")
+		}
+		kubeConfig, err = clientcmd.BuildConfigFromFlags("", config.KubeConfig)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		kubeConfig, err = rest.InClusterConfig()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return kubernetes.NewForConfig(kubeConfig)
 }

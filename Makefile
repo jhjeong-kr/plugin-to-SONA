@@ -1,6 +1,6 @@
 NY: build
 
-GOFLAGS ?= $(GOFLAGS:) -o cperfc
+GOFLAGS ?= $(GOFLAGS:) -o plugin2sona
 
 all: install test
 
