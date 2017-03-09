@@ -1,12 +1,14 @@
 package v1
 
 import (
+	"encoding/json"
 	"errors"
 	"os/user"
 	"time"
 
 	config "plugin-to-SONA/config"
 	log "plugin-to-SONA/log"
+	util "plugin-to-SONA/util"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
@@ -26,7 +28,8 @@ func Run() int {
 
 	stop := make(chan struct{})
 
-	registerPODWatcher(clientset, stop)
+	registerPodWatcher(clientset, stop)
+	registerServiceWatcher(clientset, stop)
 
 	<-stop
 
@@ -54,19 +57,37 @@ func initKubeClient() (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(kubeConfig)
 }
 
+func toPod(obj interface{}) *v1.Pod {
+	var pod v1.Pod
+
+	json.Unmarshal([]byte(util.InterfaceToString(obj)), &pod)
+	return &pod
+}
+
+func toService(obj interface{}) *v1.Service {
+	var service v1.Service
+
+	json.Unmarshal([]byte(util.InterfaceToString(obj)), &service)
+	return &service
+}
+
 func podAddFunc(obj interface{}) {
-	log.Info("Pod is added")
+	pod := toPod(obj)
+	log.Infof("Pod(\"%s\") is added", pod.Name)
+	//	log.Info(util.InterfaceToIndenttedString(obj))
 }
 
 func podDeleteFunc(obj interface{}) {
-	log.Info("Pod is added")
+	pod := toPod(obj)
+	log.Infof("Pod(\"%s\") is deleted", pod.Name)
 }
 
 func podUpdateFunc(oldObj, newObj interface{}) {
-	log.Info("Pod is added")
+	oldPod := toPod(oldObj)
+	log.Infof("Pod(\"%s\") is updated", oldPod.Name)
 }
 
-func registerPODWatcher(clientset *kubernetes.Clientset, stop chan struct{}) {
+func registerPodWatcher(clientset *kubernetes.Clientset, stop chan struct{}) {
 	watchlist := cache.NewListWatchFromClient(clientset.Core().RESTClient(), "pods", v1.NamespaceDefault, fields.Everything())
 	_, controller := cache.NewInformer(
 		watchlist,
@@ -76,6 +97,36 @@ func registerPODWatcher(clientset *kubernetes.Clientset, stop chan struct{}) {
 			AddFunc:    podAddFunc,
 			DeleteFunc: podDeleteFunc,
 			UpdateFunc: podUpdateFunc,
+		},
+	)
+	go controller.Run(stop)
+}
+
+func serviceAddFunc(obj interface{}) {
+	service := toService(obj)
+	log.Infof("Service(\"%s\") is added", service.Name)
+}
+
+func serviceDeleteFunc(obj interface{}) {
+	service := toService(obj)
+	log.Infof("Service(\"%s\") is deleted", service.Name)
+}
+
+func serviceUpdateFunc(oldObj, newObj interface{}) {
+	oldService := toService(oldObj)
+	log.Infof("Service(\"%s\") is updated", oldService.Name)
+}
+
+func registerServiceWatcher(clientset *kubernetes.Clientset, stop chan struct{}) {
+	watchlist := cache.NewListWatchFromClient(clientset.Core().RESTClient(), "services", v1.NamespaceDefault, fields.Everything())
+	_, controller := cache.NewInformer(
+		watchlist,
+		&v1.Service{},
+		time.Second*0,
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    serviceAddFunc,
+			DeleteFunc: serviceDeleteFunc,
+			UpdateFunc: serviceUpdateFunc,
 		},
 	)
 	go controller.Run(stop)

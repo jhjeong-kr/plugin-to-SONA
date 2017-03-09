@@ -15,6 +15,7 @@ import (
 func init() {
 }
 
+// Logging initializes logging packages
 func Logging() {
 	if config.LogFormat == "json" {
 		log.SetFormatter(&log.JSONFormatter{})
