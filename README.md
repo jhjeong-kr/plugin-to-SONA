@@ -1,2 +1,2 @@
 # plugin-to-SONA
-CNI plugin to SONA network
+CNI plugin to SONA network.
