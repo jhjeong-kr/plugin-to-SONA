@@ -13,11 +13,10 @@ import (
 )
 
 func init() {
-	Logging()
+	logging()
 }
 
-// Logging initializes logging packages
-func Logging() {
+func logging() {
 	if config.LogFormat == "json" {
 		log.SetFormatter(&log.JSONFormatter{})
 	} else {
