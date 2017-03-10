@@ -7,7 +7,6 @@ import (
 )
 
 func main() {
-	log.Logging()
 	log.Info("Starting plugin for SONA")
 	config.ParseCommandLine()
 	log.Info("Terminating with code: ", plugin.Run())

@@ -13,6 +13,7 @@ import (
 )
 
 func init() {
+	Logging()
 }
 
 // Logging initializes logging packages
