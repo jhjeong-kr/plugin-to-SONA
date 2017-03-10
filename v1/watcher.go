@@ -1,14 +1,12 @@
 package v1
 
 import (
-	"encoding/json"
 	"errors"
 	"os/user"
 	"time"
 
 	config "plugin-to-SONA/config"
 	log "plugin-to-SONA/log"
-	util "plugin-to-SONA/util"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
@@ -57,34 +55,24 @@ func initKubeClient() (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(kubeConfig)
 }
 
-func toPod(obj interface{}) *v1.Pod {
-	var pod v1.Pod
-
-	json.Unmarshal([]byte(util.InterfaceToString(obj)), &pod)
-	return &pod
-}
-
-func toService(obj interface{}) *v1.Service {
-	var service v1.Service
-
-	json.Unmarshal([]byte(util.InterfaceToString(obj)), &service)
-	return &service
-}
-
 func podAddFunc(obj interface{}) {
-	pod := toPod(obj)
-	log.Infof("Pod(\"%s\") is added", pod.Name)
-	//	log.Info(util.InterfaceToIndenttedString(obj))
+	pod := obj.(*v1.Pod)
+	log.Infof("pod(\"%s\") is added", pod.Name)
+	log.Infof("\tthe pod(\"%s\") is %s on \"%s\" host", pod.Status.PodIP, pod.Status.Phase, pod.Status.HostIP)
 }
 
 func podDeleteFunc(obj interface{}) {
-	pod := toPod(obj)
-	log.Infof("Pod(\"%s\") is deleted", pod.Name)
+	pod := obj.(*v1.Pod)
+	log.Infof("pod(\"%s\") is deleted", pod.Name)
+	log.Infof("\tthe pod(\"%s\") is %s on \"%s\" host", pod.Status.PodIP, pod.Status.Phase, pod.Status.HostIP)
 }
 
 func podUpdateFunc(oldObj, newObj interface{}) {
-	oldPod := toPod(oldObj)
-	log.Infof("Pod(\"%s\") is updated", oldPod.Name)
+	oldPod := oldObj.(*v1.Pod)
+	newPod := newObj.(*v1.Pod)
+	log.Infof("pod(\"%s\") is updated", oldPod.Name)
+	log.Infof("\told one(\"%s\") is %s on \"%s\" host", oldPod.Status.PodIP, oldPod.Status.Phase, oldPod.Status.HostIP)
+	log.Infof("\tnew one(\"%s\") is %s on \"%s\" host", newPod.Status.PodIP, newPod.Status.Phase, newPod.Status.HostIP)
 }
 
 func registerPodWatcher(clientset *kubernetes.Clientset, stop chan struct{}) {
@@ -103,17 +91,17 @@ func registerPodWatcher(clientset *kubernetes.Clientset, stop chan struct{}) {
 }
 
 func serviceAddFunc(obj interface{}) {
-	service := toService(obj)
+	service := obj.(*v1.Service)
 	log.Infof("Service(\"%s\") is added", service.Name)
 }
 
 func serviceDeleteFunc(obj interface{}) {
-	service := toService(obj)
+	service := obj.(*v1.Service)
 	log.Infof("Service(\"%s\") is deleted", service.Name)
 }
 
 func serviceUpdateFunc(oldObj, newObj interface{}) {
-	oldService := toService(oldObj)
+	oldService := oldObj.(*v1.Service)
 	log.Infof("Service(\"%s\") is updated", oldService.Name)
 }
 
