@@ -76,7 +76,7 @@ func podUpdateFunc(oldObj, newObj interface{}) {
 }
 
 func registerPodWatcher(clientset *kubernetes.Clientset, stop chan struct{}) {
-	watchlist := cache.NewListWatchFromClient(clientset.Core().RESTClient(), "pods", v1.NamespaceDefault, fields.Everything())
+	watchlist := cache.NewListWatchFromClient(clientset.Core().RESTClient(), string(v1.ResourcePods), v1.NamespaceDefault, fields.Everything())
 	_, controller := cache.NewInformer(
 		watchlist,
 		&v1.Pod{},
@@ -106,7 +106,7 @@ func serviceUpdateFunc(oldObj, newObj interface{}) {
 }
 
 func registerServiceWatcher(clientset *kubernetes.Clientset, stop chan struct{}) {
-	watchlist := cache.NewListWatchFromClient(clientset.Core().RESTClient(), "services", v1.NamespaceDefault, fields.Everything())
+	watchlist := cache.NewListWatchFromClient(clientset.Core().RESTClient(), string(v1.ResourceServices), v1.NamespaceDefault, fields.Everything())
 	_, controller := cache.NewInformer(
 		watchlist,
 		&v1.Service{},
