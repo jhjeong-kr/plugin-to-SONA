@@ -57,26 +57,29 @@ func initKubeClient() (*kubernetes.Clientset, error) {
 
 func podAddFunc(obj interface{}) {
 	pod := obj.(*v1.Pod)
-	log.Infof("pod(\"%s\") is added", pod.Name)
+	log.Infof("pod(\"%s\" in %s) is added", pod.Name, pod.GetNamespace())
 	log.Infof("\tthe pod(\"%s\") is %s on \"%s\" host", pod.Status.PodIP, pod.Status.Phase, pod.Status.HostIP)
+	for i, c := range pod.Status.ContainerStatuses {
+		log.Infof("\t\t%d: %s(%s)", i, c.Name, c.ContainerID)
+	}
 }
 
 func podDeleteFunc(obj interface{}) {
 	pod := obj.(*v1.Pod)
-	log.Infof("pod(\"%s\") is deleted", pod.Name)
+	log.Infof("pod(\"%s\" in %s) is deleted", pod.Name, pod.GetNamespace())
 	log.Infof("\tthe pod(\"%s\") is %s on \"%s\" host", pod.Status.PodIP, pod.Status.Phase, pod.Status.HostIP)
 }
 
 func podUpdateFunc(oldObj, newObj interface{}) {
 	oldPod := oldObj.(*v1.Pod)
 	newPod := newObj.(*v1.Pod)
-	log.Infof("pod(\"%s\") is updated", oldPod.Name)
+	log.Infof("pod(\"%s\" in %s) is updated", oldPod.Name, oldPod.GetNamespace())
 	log.Infof("\told one(\"%s\") is %s on \"%s\" host", oldPod.Status.PodIP, oldPod.Status.Phase, oldPod.Status.HostIP)
 	log.Infof("\tnew one(\"%s\") is %s on \"%s\" host", newPod.Status.PodIP, newPod.Status.Phase, newPod.Status.HostIP)
 }
 
 func registerPodWatcher(clientset *kubernetes.Clientset, stop chan struct{}) {
-	watchlist := cache.NewListWatchFromClient(clientset.Core().RESTClient(), string(v1.ResourcePods), v1.NamespaceDefault, fields.Everything())
+	watchlist := cache.NewListWatchFromClient(clientset.Core().RESTClient(), string(v1.ResourcePods), v1.NamespaceAll, fields.Everything())
 	_, controller := cache.NewInformer(
 		watchlist,
 		&v1.Pod{},
@@ -92,21 +95,21 @@ func registerPodWatcher(clientset *kubernetes.Clientset, stop chan struct{}) {
 
 func serviceAddFunc(obj interface{}) {
 	service := obj.(*v1.Service)
-	log.Infof("Service(\"%s\") is added", service.Name)
+	log.Infof("Service(\"%s\" in %s) is added", service.Name, service.GetNamespace())
 }
 
 func serviceDeleteFunc(obj interface{}) {
 	service := obj.(*v1.Service)
-	log.Infof("Service(\"%s\") is deleted", service.Name)
+	log.Infof("Service(\"%s\" in %s) is deleted", service.Name, service.GetNamespace())
 }
 
 func serviceUpdateFunc(oldObj, newObj interface{}) {
 	oldService := oldObj.(*v1.Service)
-	log.Infof("Service(\"%s\") is updated", oldService.Name)
+	log.Infof("Service(\"%s\" in %s) is updated", oldService.Name, oldService.GetNamespace())
 }
 
 func registerServiceWatcher(clientset *kubernetes.Clientset, stop chan struct{}) {
-	watchlist := cache.NewListWatchFromClient(clientset.Core().RESTClient(), string(v1.ResourceServices), v1.NamespaceDefault, fields.Everything())
+	watchlist := cache.NewListWatchFromClient(clientset.Core().RESTClient(), string(v1.ResourceServices), v1.NamespaceAll, fields.Everything())
 	_, controller := cache.NewInformer(
 		watchlist,
 		&v1.Service{},
