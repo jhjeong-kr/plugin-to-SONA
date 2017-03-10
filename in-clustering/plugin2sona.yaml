@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: plugin2sona
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: plugin2sona
+    spec:
+      containers:
+      - name: plugin2sona
+        image: plugin2sona
+
