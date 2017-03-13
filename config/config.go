@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"os"
+	"time"
 )
 
 const (
@@ -14,9 +15,13 @@ const (
 	EXITKUBEINIT   = 5
 )
 
+var EventHandlingInterval = time.Duration(5)
 var LogFormat = "text"
 var LogLevel = "info"
 var KubeConfig = "" // ex) /etc/kubernetes/admin.conf
+const (
+	DeamonSetName = "plugin2sona"
+)
 
 func init() {
 }
