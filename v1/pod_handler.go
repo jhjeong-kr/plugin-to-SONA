@@ -16,7 +16,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// Run registers CRUD watchers for Pod on kubernetes client.
+// Run registers CRUD watchers for Pod on kubernetes client
 func Run() int {
 	clientset, err := initKubeClient()
 	if err != nil {
@@ -28,7 +28,6 @@ func Run() int {
 
 	registerPodWatcher(clientset, stop)
 	registerServiceWatcher(clientset, stop)
-	//	registerNodeWatcher(clientset, stop)
 
 	<-stop
 
@@ -57,33 +56,41 @@ func initKubeClient() (*kubernetes.Clientset, error) {
 }
 
 func addFunc(obj interface{}) {
-	log.Infof("event \"ADD\" on resource \"%T\" is fired", obj)
+	log.Infof("event \"ADD\" on \"%T\" resource", obj)
 	switch obj.(type) {
 	case *v1.Pod:
-		event := NewPodAsyncEvent(AddEvent, obj)
-		GetAsyncHandler().Run(event)
+		pod := obj.(*v1.Pod)
+		log.Infof("\tthe pod is \"%s\" in \"%s\" namespace", pod.Name, pod.GetNamespace())
+		log.Infof("\tthe pod(\"%s\") is %s on \"%s\" host", pod.Status.PodIP, pod.Status.Phase, pod.Status.HostIP)
+		for i, c := range pod.Status.ContainerStatuses {
+			log.Infof("\t\t%d: %s(%s)", i, c.Name, c.ContainerID)
+		}
 	default:
 		log.Info("\tnot implemented object")
 	}
 }
 
 func deleteFunc(obj interface{}) {
-	log.Infof("event \"DELETE\" on resource \"%T\" is fired", obj)
+	log.Infof("event \"DELETE\" on \"%T\" resource", obj)
 	switch obj.(type) {
 	case *v1.Pod:
-		event := NewPodAsyncEvent(DeleteEvent, obj)
-		log.Info(event.String())
+		pod := obj.(*v1.Pod)
+		log.Infof("\tthe pod is \"%s\" in \"%s\" namespace", pod.Name, pod.GetNamespace())
+		log.Infof("\tthe pod(\"%s\") is %s on \"%s\" host", pod.Status.PodIP, pod.Status.Phase, pod.Status.HostIP)
 	default:
 		log.Info("\tnot implemented object")
 	}
 }
 
 func updateFunc(oldObj, newObj interface{}) {
-	log.Infof("event \"UPDATE\" on resource \"%T\" is fired", oldObj)
+	log.Infof("event \"UPDATE\" on \"%T\" resource", oldObj)
 	switch oldObj.(type) {
 	case *v1.Pod:
-		event := NewPodAsyncEvent(UpdateEvent, oldObj, newObj)
-		log.Info(event.String())
+		oldPod := oldObj.(*v1.Pod)
+		newPod := newObj.(*v1.Pod)
+		log.Infof("\tthe pod is \"%s\" in \"%s\" namespace", oldPod.Name, oldPod.GetNamespace())
+		log.Infof("\told one(\"%s\") is %s on \"%s\" host", oldPod.Status.PodIP, oldPod.Status.Phase, oldPod.Status.HostIP)
+		log.Infof("\tnew one(\"%s\") is %s on \"%s\" host", newPod.Status.PodIP, newPod.Status.Phase, newPod.Status.HostIP)
 	default:
 		log.Info("\tnot implemented object")
 	}
@@ -109,21 +116,6 @@ func registerServiceWatcher(clientset *kubernetes.Clientset, stop chan struct{})
 	_, controller := cache.NewInformer(
 		watchlist,
 		&v1.Service{},
-		time.Second*0,
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    addFunc,
-			DeleteFunc: deleteFunc,
-			UpdateFunc: updateFunc,
-		},
-	)
-	go controller.Run(stop)
-}
-
-func registerNodeWatcher(clientset *kubernetes.Clientset, stop chan struct{}) {
-	watchlist := cache.NewListWatchFromClient(clientset.Core().RESTClient(), "nodes", v1.NamespaceAll, fields.Everything())
-	_, controller := cache.NewInformer(
-		watchlist,
-		&v1.Node{},
 		time.Second*0,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc:    addFunc,
